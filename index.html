@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Grove">
+<meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1511" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Grove</title>
+<style>
+:root{
+  --bg:#f4f1ea; --surface:#fffdf8; --surface2:#efeadf; --text:#1f2a22; --muted:#6b7468; --line:#e2dccd;
+  --accent:#3f8f4f; --accent-ink:#fff; --trunk:#7a5233; --ground:#cdbf9f; --sky1:#e3efdd; --sky2:#fbf7ec;
+  --h0:#e6e0d2; --h1:#c6e2b8; --h2:#8fca7f; --h3:#55a85b; --h4:#2f7d3e; --flame:#d9682a; --danger:#c0442f;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0f1511; --surface:#17201a; --surface2:#1f2a22; --text:#e8efe6; --muted:#93a093; --line:#2a362d;
+    --accent:#5cbf6c; --accent-ink:#0b130d; --trunk:#9a6b44; --ground:#3a3426; --sky1:#1a2a1f; --sky2:#121a15;
+    --h0:#222c25; --h1:#244a2c; --h2:#2f6e3c; --h3:#43a052; --h4:#6fd17d; --flame:#f08a4b; --danger:#e0654f;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  padding:env(safe-area-inset-top) 0 calc(76px + env(safe-area-inset-bottom));min-height:100vh}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+main{max-width:560px;margin:0 auto;padding:12px 16px 24px}
+h1{font-size:28px;margin:8px 0 12px;letter-spacing:-.02em}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:24px 0 10px;font-weight:600}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px}
+.muted{color:var(--muted)} .small{font-size:13px}
+.pane{display:none} .pane.on{display:block}
+
+/* tree */
+.treecard{overflow:hidden}
+#tree svg{display:block;width:100%;height:auto}
+#tree .branches path{fill:none;stroke:var(--trunk);stroke-linecap:round}
+.sway{transform-origin:150px 205px;animation:sway 7s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:rotate(-.8deg)}50%{transform:rotate(.8deg)}}
+@media (prefers-reduced-motion: reduce){.sway{animation:none}}
+.treemeta{display:flex;gap:16px;align-items:flex-end;justify-content:space-between;padding:12px 16px 16px;border-top:1px solid var(--line)}
+.treemeta .lvl{font-weight:700}
+.bar{height:8px;border-radius:99px;background:var(--surface2);overflow:hidden;margin:6px 0 4px;width:min(220px,50vw)}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .4s}
+.rule{padding:10px 16px;border-top:1px solid var(--line);font-size:13px;font-weight:600;color:var(--flame)}
+.rule.safe{color:var(--accent)}
+.mood{text-align:right} .mood b{display:block} .mood span{font-size:13px;color:var(--muted)}
+
+/* date nav */
+.datenav{display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px}
+.datenav button{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:20px}
+.datenav button:disabled{opacity:.35}
+.datenav .mid{text-align:center} .datenav .mid b{display:block;font-size:20px}
+
+/* habits */
+.list{display:flex;flex-direction:column;gap:8px}
+.habit{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px 14px;min-height:60px;
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;transition:background .2s,border-color .2s}
+.habit .emoji{font-size:24px;width:30px;text-align:center}
+.habit .hname{flex:1;font-weight:600}
+.streak{font-size:14px;color:var(--flame);font-weight:700;white-space:nowrap}
+.check{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex:none;transition:all .2s}
+.check svg{width:16px;height:16px;opacity:0;transform:scale(.4);transition:all .2s}
+.habit.done{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.habit.done .check{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.habit.done .check svg{opacity:1;transform:scale(1)}
+.habit.done .hname{text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--text) 35%,transparent)}
+.progress{display:flex;justify-content:space-between;align-items:baseline;margin:0 2px 8px}
+.alldone{margin-top:10px;text-align:center;font-weight:600;color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{padding:8px 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface)}
+
+/* forms */
+form.row{display:flex;gap:8px}
+input[type=text]{flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:16px}
+input[type=text]:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.btn{padding:12px 16px;border-radius:12px;border:0;background:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.ghost{background:var(--surface);color:var(--text);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--danger);border:1px solid var(--line)}
+.extras{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.extras li{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.extras li span{flex:1}
+.x{border:0;background:none;color:var(--muted);font-size:20px;line-height:1;padding:4px 6px}
+
+/* heatmap */
+.calhead{display:flex;justify-content:space-between;align-items:center;gap:12px}
+select{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);max-width:60%}
+.heat{padding:14px 16px 12px 12px}
+.hm{display:grid;grid-template-columns:18px 1fr;gap:4px}
+.hm .days{display:grid;grid-template-rows:repeat(7,1fr);gap:3px;font-size:10px;color:var(--muted)}
+.hm .days span{display:flex;align-items:center}
+.months{display:grid;gap:3px;font-size:10px;color:var(--muted);height:14px;margin-left:22px;margin-bottom:2px}
+.months span{white-space:nowrap;overflow:visible}
+.grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:3px}
+.cell{aspect-ratio:1;border:0;border-radius:3px;padding:0;background:var(--h0)}
+.cell.l1{background:var(--h1)} .cell.l2{background:var(--h2)} .cell.l3{background:var(--h3)} .cell.l4{background:var(--h4)}
+.cell.future{visibility:hidden}
+.cell.today{outline:1.5px solid var(--muted);outline-offset:1px}
+.cell.sel{outline:2px solid var(--text);outline-offset:1px}
+.legend{display:flex;align-items:center;justify-content:flex-end;gap:3px;font-size:11px;color:var(--muted);margin-top:10px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.stat{padding:14px}
+.stat b{display:block;font-size:26px;letter-spacing:-.02em}
+.stat span{font-size:13px;color:var(--muted)}
+.daydetail{padding:14px;margin-top:12px}
+.daydetail ul{margin:8px 0 12px;padding-left:20px}
+
+/* manage */
+.mrow{display:flex;align-items:center;gap:6px;padding:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.mrow input.memoji,.memoji{flex:none;width:52px;text-align:center;padding:10px 4px}
+.mrow input[type=text]{border-color:transparent;background:transparent;padding:10px 6px}
+.mrow input[type=text]:focus{background:var(--bg)}
+.ibtn{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);flex:none;font-size:14px}
+.ibtn:disabled{opacity:.3}
+.ibtn.del{color:var(--danger)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.note{font-size:13px;color:var(--muted);margin-top:10px}
+
+/* tabbar */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;
+  background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+nav.tabs .in{display:flex;width:100%;max-width:560px}
+nav.tabs button{flex:1;border:0;background:none;padding:6px 0;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--muted)}
+nav.tabs button svg{width:24px;height:24px}
+nav.tabs button[aria-selected=true]{color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+  <section class="pane on" id="pane-today">
+    <div class="card treecard">
+      <div id="tree"></div>
+      <div class="treemeta" id="treeMeta"></div>
+      <div class="rule" id="treeRule"></div>
+    </div>
+
+    <div class="datenav">
+      <button id="prevDay" aria-label="Previous day">‹</button>
+      <div class="mid"><b id="dateLabel">Today</b><span class="small muted" id="dateSub"></span></div>
+      <button id="nextDay" aria-label="Next day">›</button>
+    </div>
+
+    <div id="habitList"></div>
+
+    <h2>What else did you do?</h2>
+    <form class="row" id="extraForm">
+      <input type="text" id="extraInput" placeholder="e.g. cleaned my room, called mom" enterkeyhint="done" autocomplete="off">
+      <button class="btn">Add</button>
+    </form>
+    <ul class="extras" id="extraList"></ul>
+  </section>
+
+  <section class="pane" id="pane-cal">
+    <div class="calhead">
+      <h1>Calendar</h1>
+      <select id="calFilter" aria-label="Show habit"></select>
+    </div>
+    <div class="card heat" id="heat"></div>
+    <div class="stats" id="stats"></div>
+    <div id="dayDetail"></div>
+  </section>
+
+  <section class="pane" id="pane-habits">
+    <h1>Habits</h1>
+    <div class="list" id="manageList"></div>
+    <h2>Add a habit</h2>
+    <form class="row" id="addForm">
+      <input type="text" id="addEmoji" class="memoji" value="✅" aria-label="Emoji">
+      <input type="text" id="addName" placeholder="New habit" autocomplete="off">
+      <button class="btn">Add</button>
+    </form>
+
+    <h2>Your data</h2>
+    <div class="btnrow">
+      <button class="btn ghost" id="exportBtn">Export backup</button>
+      <button class="btn ghost" id="importBtn">Import backup</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <p class="note">Everything is saved on this device only. Export a backup now and then so you don't lose your tree if you switch phones.</p>
+  </section>
+</main>
+
+<nav class="tabs">
+  <div class="in" role="tablist">
+    <button data-tab="today" aria-selected="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-8"/><path d="M12 14c-4 0-7-2.5-7-6.5C5 4 8 2 12 2s7 2 7 5.5c0 4-3 6.5-7 6.5z"/><path d="M8 22h8"/></svg>Today</button>
+    <button data-tab="cal" aria-selected="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/><path d="M7.5 13h2M11 13h2M14.5 13h2M7.5 17h2M11 17h2"/></svg>Calendar</button>
+    <button data-tab="habits" aria-selected="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Habits</button>
+  </div>
+</nav>
+
+<script>
+(() => {
+const KEY = 'grove.v1';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const f = n => Math.round(n * 10) / 10;
+
+// ---- dates (local "YYYY-MM-DD" keys) ----
+const pad = n => String(n).padStart(2, '0');
+const key = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parse = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (k, n) => { const d = parse(k); d.setDate(d.getDate() + n); return key(d); };
+const todayKey = () => key(new Date());
+const fmt = (k, o) => parse(k).toLocaleDateString(undefined, o);
+
+// ---- state ----
+let state = load();
+let tab = 'today', viewDate = todayKey(), calFilter = 'all', calSel = null;
+
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && Array.isArray(s.habits) && s.log) return s;
+  } catch (e) {}
+  return { habits: [], log: {} };
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+const day = k => state.log[k] || { done: [], extras: [] };
+const ensureDay = k => state.log[k] || (state.log[k] = { done: [], extras: [] });
+const prune = k => { const d = state.log[k]; if (d && !d.done.length && !d.extras.length) delete state.log[k]; };
+const isDone = (id, k) => day(k).done.includes(id);
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+const firstGrapheme = s => {
+  s = s.trim(); if (!s) return '✅';
+  if (window.Intl && Intl.Segmenter) { for (const { segment } of new Intl.Segmenter().segment(s)) return segment; }
+  return Array.from(s)[0];
+};
+
+// ---- scoring ----
+// A day's score: share of active habits done, plus a small bonus for each extra thing logged.
+function dayScore(k) {
+  const d = day(k);
+  const active = state.habits.filter(h => h.created <= k || d.done.includes(h.id));
+  if (!active.length) return Math.min(1, 0.25 * d.extras.length);
+  const n = active.filter(h => d.done.includes(h.id)).length;
+  return Math.min(1, n / active.length + 0.1 * d.extras.length);
+}
+function startKey() {
+  const ks = state.habits.map(h => h.created).concat(Object.keys(state.log));
+  return ks.length ? ks.sort()[0] : null;
+}
+// Health = average score over the last 7 days. Today only counts if it helps,
+// so the tree doesn't wilt every morning before you've checked anything off.
+function health() {
+  const start = startKey(); if (!start) return 0.5;
+  const avg = end => {
+    let sum = 0, c = 0;
+    for (let i = 0; i < 7; i++) { const k = addDays(end, -i); if (k < start) break; sum += dayScore(k); c++; }
+    return c ? sum / c : null;
+  };
+  const t = todayKey();
+  return Math.max(avg(t) ?? 0, avg(addDays(t, -1)) ?? 0.5);
+}
+// Any finished day with fewer than MIN_TASKS (habits + extras) resets the tree's growth.
+const MIN_TASKS = 3;
+const taskCount = k => day(k).done.length + day(k).extras.length;
+function lastReset() {
+  const start = startKey(); if (!start) return null;
+  for (let k = addDays(todayKey(), -1); k >= start; k = addDays(k, -1)) if (taskCount(k) < MIN_TASKS) return k;
+  return null;
+}
+function growthPoints() {
+  const r = lastReset(); let p = 0;
+  for (const k in state.log) if (!r || k > r) p += state.log[k].done.length + 0.5 * state.log[k].extras.length;
+  return p;
+}
+const LEVELS = [0, 3, 8, 15, 30, 50, 80, 120, 175, 250, 350];
+const NAMES = ['Seed', 'Sprout', 'Seedling', 'Sapling', 'Young tree', 'Growing tree', 'Sturdy tree', 'Mature tree', 'Grand tree', 'Ancient tree', 'World tree'];
+function levelInfo() {
+  const p = growthPoints(); let l = 0;
+  while (l + 1 < LEVELS.length && p >= LEVELS[l + 1]) l++;
+  const next = LEVELS[l + 1];
+  return { level: l, points: p, next, prog: next ? (p - LEVELS[l]) / (next - LEVELS[l]) : 1 };
+}
+function mood(h) {
+  if (h >= 0.85) return 'Thriving 🌸';
+  if (h >= 0.6) return 'Healthy 🌿';
+  if (h >= 0.35) return 'Thirsty 💧';
+  if (h >= 0.12) return 'Wilting 🍂';
+  return 'Dormant 🪵';
+}
+
+// ---- streaks ----
+function streakOf(pred) {
+  let k = todayKey(); if (!pred(k)) k = addDays(k, -1);
+  let n = 0; while (pred(k)) { n++; k = addDays(k, -1); }
+  return n;
+}
+function bestOf(pred) {
+  let best = 0, cur = 0, prev = null;
+  for (const k of Object.keys(state.log).filter(pred).sort()) {
+    cur = prev && addDays(prev, 1) === k ? cur + 1 : 1;
+    best = Math.max(best, cur); prev = k;
+  }
+  return best;
+}
+const habitStreak = id => streakOf(k => isDone(id, k));
+const habitBest = id => bestOf(k => isDone(id, k));
+const anyDone = k => dayScore(k) > 0;
+
+// ---- tree ----
+function rng(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function mix(a, b, t) {
+  const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const A = p(a), B = p(b);
+  return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join('');
+}
+const leafColor = t => { t = Math.max(0, Math.min(1, t)); return t < .5 ? mix('#9c6b3c', '#c9a640', t * 2) : mix('#c9a640', '#3f9a4a', (t - .5) * 2); };
+
+function treeSVG(level, h) {
+  const R = rng(7), cx = 150, gy = 205;
+  let branches = '', leaves = '', fallen = '', blossoms = '';
+  if (level === 0) {
+    const c = leafColor(h * 1.1);
+    branches = `<path d="M150 ${gy} Q147 192 150 178" stroke-width="3"/>`;
+    leaves = `<ellipse cx="142" cy="178" rx="9" ry="4.5" transform="rotate(-25 142 178)" fill="${c}"/>
+              <ellipse cx="158" cy="176" rx="9" ry="4.5" transform="rotate(25 158 176)" fill="${c}"/>`;
+  } else {
+    const depth = Math.min(level + 1, 8), L = Math.min(level, 8);
+    const tips = [];
+    const br = (x, y, a, len, w, d) => {
+      const x2 = x + Math.sin(a) * len, y2 = y - Math.cos(a) * len;
+      const bend = (R() - .5) * len * .25;
+      const mx = (x + x2) / 2 + Math.cos(a) * bend, my = (y + y2) / 2 + Math.sin(a) * bend;
+      branches += `<path d="M${f(x)} ${f(y)}Q${f(mx)} ${f(my)} ${f(x2)} ${f(y2)}" stroke-width="${f(w)}"/>`;
+      if (d <= 2) tips.push([x2, y2]);
+      if (d <= 0) return;
+      const n = level >= 6 && R() < .12 * (level - 5) ? 3 : 2;
+      const spread = .38 + R() * .22;
+      for (let i = 0; i < n; i++) {
+        const t = i / (n - 1) - .5;
+        const na = Math.max(-1.35, Math.min(1.35, (a + t * 2 * spread + (R() - .5) * .25) * .96));
+        br(x2, y2, na, len * (.7 + R() * .12), w * .68, d - 1);
+      }
+    };
+    br(cx, gy, (R() - .5) * .08, 16 + L * 3.6, 2.4 + level * 1.3, depth);
+
+    // Every leaf slot draws the same random numbers regardless of health, so the tree's
+    // shape stays put and only its foliage changes as you do better or worse.
+    const rx = 7.5 - L * .3, ry = rx * .55;
+    const fallChance = Math.min(.4, 15 / tips.length);
+    for (const [x, y] of tips) for (let i = 0; i < 2; i++) {
+      const r = R(), r2 = R(), r3 = R(), ox = (R() - .5) * 14, oy = (R() - .5) * 12, rot = R() * 180;
+      const lx = f(x + ox), ly = f(y + oy);
+      if (r < Math.pow(h, 1.3) * 1.05) {
+        leaves += `<ellipse cx="${lx}" cy="${ly}" rx="${f(rx)}" ry="${f(ry)}" transform="rotate(${f(rot)} ${lx} ${ly})" fill="${leafColor(h * 1.2 - .1 + (r2 - .5) * .35)}"/>`;
+        if (h > .8 && r3 < (h - .8) * 2) blossoms += `<circle cx="${lx}" cy="${ly}" r="2.8" fill="#f2a7c3"/><circle cx="${lx}" cy="${ly}" r="1" fill="#fff3c4"/>`;
+      } else if (h < .6 && level >= 2 && r2 < fallChance) {
+        const fx = f(cx + (x - cx) * .9 + ox), fy = f(gy + 1 + r3 * 7);
+        fallen += `<ellipse cx="${fx}" cy="${fy}" rx="${f(rx * .8)}" ry="${f(ry * .6)}" transform="rotate(${f(rot / 6 - 15)} ${fx} ${fy})" fill="${leafColor(.1 + r3 * .3)}" opacity=".85"/>`;
+      }
+    }
+  }
+  const cloud = h < .35 ? `<g fill="var(--muted)" opacity=".35"><circle cx="238" cy="48" r="13"/><circle cx="254" cy="42" r="16"/><circle cx="270" cy="50" r="11"/><rect x="236" y="48" width="36" height="13" rx="6"/></g>` : '';
+  return `<svg viewBox="0 0 300 230" role="img" aria-label="Your tree">
+    <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--sky1)"/><stop offset="1" style="stop-color:var(--sky2)"/></linearGradient></defs>
+    <rect width="300" height="230" fill="url(#sky)"/>
+    <circle cx="254" cy="44" r="26" fill="#f5c542" opacity="${f(.15 * h)}"/>
+    <circle cx="254" cy="44" r="15" fill="#f5c542" opacity="${f(.3 + .7 * h)}"/>
+    ${cloud}
+    <ellipse cx="150" cy="${gy + 6}" rx="${110 + level * 4}" ry="12" fill="var(--ground)"/>
+    <g>${fallen}</g>
+    <g class="sway"><g class="branches">${branches}</g><g>${leaves}</g><g>${blossoms}</g></g>
+  </svg>`;
+}
+
+// ---- rendering ----
+const CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+const SUGGEST = [['💧', 'Drink water'], ['🏃', 'Exercise'], ['📚', 'Read 20 min'], ['🧘', 'Meditate'], ['😴', 'In bed by 11'], ['🥗', 'Eat a vegetable'], ['📵', 'No phone first hour']];
+
+function renderToday() {
+  const k = viewDate, t = todayKey();
+  const li = levelInfo(), h = health();
+  $('#tree').innerHTML = treeSVG(li.level, h);
+  $('#treeMeta').innerHTML = `
+    <div>
+      <div class="lvl">Lv ${li.level} · ${NAMES[li.level]}</div>
+      <div class="bar"><i style="width:${f(li.prog * 100)}%"></i></div>
+      <div class="small muted">${li.next ? `${Math.ceil(li.next - li.points)} check-ins to ${NAMES[li.level + 1]}` : 'Fully grown 🌳'}</div>
+    </div>
+    <div class="mood"><b>${mood(h)}</b><span>${Math.round(h * 100)}% health</span></div>`;
+  const n = taskCount(t), r = lastReset();
+  $('#treeRule').className = 'rule' + (n >= MIN_TASKS ? ' safe' : '');
+  $('#treeRule').innerHTML = (n >= MIN_TASKS
+    ? `✅ ${n} tasks today. Your tree is safe.`
+    : `⚠️ ${n}/${MIN_TASKS} tasks today. Do ${MIN_TASKS - n} more or your tree resets at midnight.`)
+    + (r ? `<span class="muted"> Last reset ${fmt(r, { month: 'short', day: 'numeric' })}.</span>` : '');
+
+  $('#dateLabel').textContent = k === t ? 'Today' : k === addDays(t, -1) ? 'Yesterday' : fmt(k, { weekday: 'long' });
+  $('#dateSub').textContent = fmt(k, { month: 'long', day: 'numeric', year: k.slice(0, 4) === t.slice(0, 4) ? undefined : 'numeric' });
+  $('#nextDay').disabled = k >= t;
+
+  const d = day(k);
+  if (!state.habits.length) {
+    $('#habitList').innerHTML = `<div class="card" style="padding:16px">
+      <b>Plant your first habits</b><div class="small muted">Tap to add, or make your own in the Habits tab.</div>
+      <div class="chips">${SUGGEST.map(([e, n]) => `<button class="chip" data-act="suggest" data-e="${e}" data-n="${esc(n)}">${e} ${esc(n)}</button>`).join('')}</div></div>`;
+  } else {
+    const n = state.habits.filter(x => d.done.includes(x.id)).length;
+    $('#habitList').innerHTML = `
+      <div class="progress"><span class="small muted">${n} of ${state.habits.length} done</span></div>
+      <div class="list">${state.habits.map(x => {
+        const done = d.done.includes(x.id), s = habitStreak(x.id);
+        return `<button class="habit ${done ? 'done' : ''}" data-act="toggle" data-id="${x.id}" aria-pressed="${done}">
+          <span class="emoji">${esc(x.emoji)}</span><span class="hname">${esc(x.name)}</span>
+          ${s ? `<span class="streak">🔥 ${s}</span>` : ''}<span class="check">${CHECK}</span></button>`;
+      }).join('')}</div>
+      ${n === state.habits.length ? `<div class="alldone">All done${k === t ? ' today' : ''}. Your tree is happy 🌳</div>` : ''}`;
+  }
+  $('#extraList').innerHTML = d.extras.map((e, i) => `<li><span>${esc(e)}</span><button class="x" data-act="rmExtra" data-i="${i}" aria-label="Remove">×</button></li>`).join('');
+}
+
+function renderCal() {
+  const t = todayKey(), WEEKS = 20;
+  const sel = $('#calFilter');
+  if (calFilter !== 'all' && !state.habits.some(h => h.id === calFilter)) calFilter = 'all';
+  sel.innerHTML = `<option value="all">All habits</option>` + state.habits.map(h => `<option value="${h.id}">${esc(h.emoji)} ${esc(h.name)}</option>`).join('');
+  sel.value = calFilter;
+
+  const val = calFilter === 'all' ? dayScore : k => isDone(calFilter, k) ? 1 : 0;
+  const start = addDays(t, -(parse(t).getDay() + 7 * (WEEKS - 1)));
+  let cells = '', months = '';
+  for (let w = 0; w < WEEKS; w++) {
+    let label = '';
+    for (let i = 0; i < 7; i++) {
+      const k = addDays(start, w * 7 + i), dt = parse(k);
+      if (dt.getDate() === 1 && w > 0) label = dt.toLocaleDateString(undefined, { month: 'short' });
+      if (k > t) { cells += `<span class="cell future"></span>`; continue; }
+      const v = val(k), lv = v <= 0 ? 0 : v < .34 ? 1 : v < .67 ? 2 : v < 1 ? 3 : 4;
+      cells += `<button class="cell l${lv}${k === t ? ' today' : ''}${k === calSel ? ' sel' : ''}" data-act="cal" data-k="${k}" aria-label="${fmt(k, { month: 'short', day: 'numeric' })}: ${Math.round(v * 100)}%"></button>`;
+    }
+    months += `<span>${label}</span>`;
+  }
+  $('#heat').innerHTML = `
+    <div class="months" style="grid-template-columns:repeat(${WEEKS},1fr)">${months}</div>
+    <div class="hm">
+      <div class="days">${['', 'M', '', 'W', '', 'F', ''].map(s => `<span>${s}</span>`).join('')}</div>
+      <div class="grid" style="grid-template-columns:repeat(${WEEKS},1fr)">${cells}</div>
+    </div>
+    <div class="legend">Less ${[0, 1, 2, 3, 4].map(i => `<i style="background:var(--h${i})"></i>`).join('')} More</div>`;
+
+  // stats
+  let cur, best, total, pct;
+  const startK = startKey();
+  const last30 = pred => {
+    let c = 0, s = 0;
+    for (let i = 0; i < 30; i++) { const k = addDays(t, -i); if (!startK || k < pred.from) break; s += pred.v(k); c++; }
+    return c ? Math.round(s / c * 100) : 0;
+  };
+  if (calFilter === 'all') {
+    cur = streakOf(anyDone); best = bestOf(anyDone);
+    total = Object.values(state.log).reduce((a, d) => a + d.done.length, 0);
+    pct = last30({ from: startK, v: dayScore });
+  } else {
+    const h = state.habits.find(x => x.id === calFilter);
+    cur = habitStreak(h.id); best = habitBest(h.id);
+    total = Object.values(state.log).filter(d => d.done.includes(h.id)).length;
+    const first = Object.keys(state.log).filter(k => isDone(h.id, k)).sort()[0];
+    pct = last30({ from: first && first < h.created ? first : h.created, v: k => isDone(h.id, k) ? 1 : 0 });
+  }
+  $('#stats').innerHTML = [
+    [`🔥 ${cur}`, 'Current streak'], [best, 'Best streak'], [total, 'Total check-ins'], [`${pct}%`, 'Last 30 days']
+  ].map(([b, s]) => `<div class="card stat"><b>${b}</b><span>${s}</span></div>`).join('');
+
+  // selected day
+  if (calSel) {
+    const d = day(calSel);
+    const done = state.habits.filter(h => d.done.includes(h.id));
+    const items = done.map(h => `${esc(h.emoji)} ${esc(h.name)}`).concat(d.extras.map(esc));
+    $('#dayDetail').innerHTML = `<div class="card daydetail">
+      <b>${fmt(calSel, { weekday: 'long', month: 'long', day: 'numeric' })}</b>
+      ${items.length ? `<ul>${items.map(i => `<li>${i}</li>`).join('')}</ul>` : `<p class="muted small">Nothing logged.</p>`}
+      <button class="btn ghost" data-act="editDay" data-k="${calSel}">Edit this day</button></div>`;
+  } else {
+    $('#dayDetail').innerHTML = `<p class="note">Tap a square to see what you did that day.</p>`;
+  }
+}
+
+function renderHabits() {
+  const n = state.habits.length;
+  $('#manageList').innerHTML = n ? state.habits.map((h, i) => `
+    <div class="mrow">
+      <input type="text" class="memoji" data-edit="emoji" data-id="${h.id}" value="${esc(h.emoji)}" aria-label="Emoji">
+      <input type="text" data-edit="name" data-id="${h.id}" value="${esc(h.name)}" aria-label="Name">
+      <button class="ibtn" data-act="up" data-id="${h.id}" ${i === 0 ? 'disabled' : ''} aria-label="Move up">▲</button>
+      <button class="ibtn" data-act="down" data-id="${h.id}" ${i === n - 1 ? 'disabled' : ''} aria-label="Move down">▼</button>
+      <button class="ibtn del" data-act="del" data-id="${h.id}" aria-label="Delete">✕</button>
+    </div>`).join('') : `<p class="muted">No habits yet. Add one below.</p>`;
+}
+
+function render() {
+  for (const p of ['today', 'cal', 'habits']) $(`#pane-${p}`).classList.toggle('on', p === tab);
+  document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
+  ({ today: renderToday, cal: renderCal, habits: renderHabits })[tab]();
+}
+
+// ---- actions ----
+function addHabit(emoji, name) {
+  name = name.trim(); if (!name) return;
+  state.habits.push({ id: uid(), name, emoji: firstGrapheme(emoji), created: todayKey() });
+  save();
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act],[data-tab]'); if (!b) return;
+  if (b.dataset.tab) { tab = b.dataset.tab; if (tab === 'today') viewDate = todayKey(); render(); scrollTo(0, 0); return; }
+  const id = b.dataset.id, i = state.habits.findIndex(h => h.id === id);
+  switch (b.dataset.act) {
+    case 'toggle': {
+      const d = ensureDay(viewDate), j = d.done.indexOf(id);
+      j >= 0 ? d.done.splice(j, 1) : d.done.push(id);
+      prune(viewDate); save(); break;
+    }
+    case 'suggest': addHabit(b.dataset.e, b.dataset.n); break;
+    case 'rmExtra': ensureDay(viewDate).extras.splice(+b.dataset.i, 1); prune(viewDate); save(); break;
+    case 'cal': calSel = calSel === b.dataset.k ? null : b.dataset.k; break;
+    case 'editDay': viewDate = b.dataset.k; tab = 'today'; scrollTo(0, 0); break;
+    case 'up': case 'down': {
+      const j = b.dataset.act === 'up' ? i - 1 : i + 1;
+      [state.habits[i], state.habits[j]] = [state.habits[j], state.habits[i]]; save(); break;
+    }
+    case 'del':
+      if (!confirm(`Delete "${state.habits[i].name}"? Its past check-ins still count toward your tree's growth.`)) return;
+      state.habits.splice(i, 1); save(); break;
+  }
+  render();
+});
+
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 'calFilter') { calFilter = el.value; render(); return; }
+  if (!el.dataset.edit) return;
+  const h = state.habits.find(x => x.id === el.dataset.id); if (!h) return;
+  if (el.dataset.edit === 'emoji') h.emoji = el.value = firstGrapheme(el.value);
+  else if (el.value.trim()) h.name = el.value.trim();
+  else el.value = h.name;
+  save();
+});
+
+$('#prevDay').onclick = () => { viewDate = addDays(viewDate, -1); render(); };
+$('#nextDay').onclick = () => { if (viewDate < todayKey()) { viewDate = addDays(viewDate, 1); render(); } };
+
+$('#extraForm').onsubmit = e => {
+  e.preventDefault();
+  const v = $('#extraInput').value.trim(); if (!v) return;
+  ensureDay(viewDate).extras.push(v); save();
+  $('#extraInput').value = ''; render();
+};
+$('#addForm').onsubmit = e => {
+  e.preventDefault();
+  addHabit($('#addEmoji').value, $('#addName').value);
+  $('#addName').value = ''; $('#addEmoji').value = '✅'; render();
+};
+
+$('#exportBtn').onclick = async () => {
+  const name = `grove-backup-${todayKey()}.json`;
+  const file = new File([JSON.stringify(state, null, 2)], name, { type: 'application/json' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Grove backup' }); return; } catch (err) { if (err.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$('#importBtn').onclick = () => $('#importFile').click();
+$('#importFile').onchange = async e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+  try {
+    const s = JSON.parse(await file.text());
+    if (!Array.isArray(s.habits) || typeof s.log !== 'object') throw 0;
+    if (!confirm('Replace everything on this device with this backup?')) return;
+    state = s; save(); render();
+  } catch (err) { alert("That file doesn't look like a Grove backup."); }
+};
+
+// Jump back to today when the app is reopened on a new day.
+let lastSeen = todayKey();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  const t = todayKey();
+  if (t !== lastSeen) { if (viewDate === lastSeen) viewDate = t; lastSeen = t; render(); }
+});
+
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js');
+render();
+})();
+</script>
+</body>
+</html>
